@@ -1,0 +1,73 @@
+{
+  "name": "api-clear-tab",
+  "version": "0.1.0",
+  "description": "基于 Fastify + TypeScript 的后端项目",
+  "main": "dist/server.js",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "tests",
+    ".env.example",
+    ".eslintrc.json",
+    "tsconfig.json",
+    "tsconfig.eslint.json",
+    "PROJECT_README.md",
+    "README.md",
+    "LICENSE",
+    "VERSION",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "fastify",
+    "typescript",
+    "scaffold",
+    "backend",
+    "template",
+    "restful-api"
+  ],
+  "author": "Lius",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "dependencies": {
+    "@fastify/swagger": "^8.14.0",
+    "@fastify/swagger-ui": "^3.0.0",
+    "axios": "^1.13.4",
+    "fastify": "^4.26.0",
+    "fastify-plugin": "^4.5.1",
+    "pino": "^8.17.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.56.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.0",
+    "pino-pretty": "^10.3.1",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint src cli scripts --ext .ts,.js",
+    "lint:fix": "eslint src cli scripts --ext .ts,.js --fix",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "bump-version": "node scripts/bump-version.js"
+  }
+}
