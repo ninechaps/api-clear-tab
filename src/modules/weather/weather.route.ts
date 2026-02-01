@@ -3,6 +3,7 @@ import { WeatherController } from './weather.controller.js'
 import {
   getWeatherSchema,
   getSupportedCitiesSchema,
+  getAirQualitySchema,
 } from './weather.schema.js'
 
 /**
@@ -28,6 +29,15 @@ const weatherRoutes: FastifyPluginAsync = async (fastify) => {
       ...getSupportedCitiesSchema,
     },
   }, weatherController.getSupportedCities.bind(weatherController))
+
+  // GET /weather/air-quality - 查询城市空气质量
+  fastify.get('/weather/air-quality', {
+    schema: {
+      tags: ['weather'],
+      description: '查询指定城市的空气质量信息',
+      ...getAirQualitySchema,
+    },
+  }, weatherController.getAirQuality.bind(weatherController))
 }
 
 export default weatherRoutes

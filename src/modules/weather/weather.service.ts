@@ -31,6 +31,30 @@ export interface QueryWeatherDto {
 }
 
 /**
+ * 空气质量数据接口
+ */
+export interface AirQuality {
+  city: string
+  latitude: number
+  longitude: number
+  aqi: number
+  category: string
+  pm25: number
+  pm10: number
+  no2: number
+  o3: number
+  co: number
+  updatedAt: string
+}
+
+/**
+ * 查询空气质量 DTO
+ */
+export interface QueryAirQualityDto {
+  city: string
+}
+
+/**
  * 默认时区
  */
 const TIMEZONE = 'auto'
@@ -39,6 +63,23 @@ const TIMEZONE = 'auto'
  * 获取的天气数据字段
  */
 const WEATHER_FIELDS = 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m'
+
+/**
+ * 空气质量数据字段
+ */
+const AIR_QUALITY_FIELDS = 'us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone,carbon_monoxide'
+
+/**
+ * AQI 分类标准 (美国 EPA)
+ */
+const aqiCategories: Record<number, string> = {
+  0: 'Good',
+  1: 'Moderate',
+  2: 'Unhealthy for Sensitive Groups',
+  3: 'Unhealthy',
+  4: 'Very Unhealthy',
+  5: 'Hazardous',
+}
 
 /**
  * 城市坐标映射表
@@ -155,5 +196,77 @@ export class WeatherService {
    */
   async getSupportedCities(): Promise<string[]> {
     return Object.values(cityCoordinates).map((c) => c.name)
+  }
+
+  /**
+   * 查询指定城市的空气质量
+   * 调用 Open-Meteo Air Quality API 获取实时空气质量数据
+   */
+  async getAirQuality(dto: QueryAirQualityDto): Promise<AirQuality> {
+    const cityKey = dto.city.toLowerCase()
+    const cityData = cityCoordinates[cityKey]
+
+    if (!cityData) {
+      const supportedCities = Object.values(cityCoordinates)
+        .map((c) => c.name)
+        .join(', ')
+      throw new Error(`城市 "${dto.city}" 不支持。支持的城市：${supportedCities}`)
+    }
+
+    try {
+      // 调用 Open-Meteo Air Quality API
+      const response = await httpClient.get<{
+        current?: {
+          us_aqi?: number
+          pm2_5?: number
+          pm10?: number
+          nitrogen_dioxide?: number
+          ozone?: number
+          carbon_monoxide?: number
+        }
+        latitude?: number
+        longitude?: number
+      }>(ENDPOINTS.AIR_QUALITY_API, {
+        params: {
+          latitude: cityData.lat,
+          longitude: cityData.lon,
+          current: AIR_QUALITY_FIELDS,
+        },
+      })
+
+      const data = response.data
+      const current = data.current
+
+      if (!current) {
+        throw new Error('无法获取空气质量数据')
+      }
+
+      const aqi = Math.round(current.us_aqi || 0)
+      const aqiCategory = aqi >= 0 && aqi <= 50 ? 0 :
+                          aqi >= 51 && aqi <= 100 ? 1 :
+                          aqi >= 101 && aqi <= 150 ? 2 :
+                          aqi >= 151 && aqi <= 200 ? 3 :
+                          aqi >= 201 && aqi <= 300 ? 4 : 5
+      const category = aqiCategories[aqiCategory] || 'Unknown'
+
+      return {
+        city: cityData.name,
+        latitude: data.latitude || cityData.lat,
+        longitude: data.longitude || cityData.lon,
+        aqi,
+        category,
+        pm25: Math.round((current.pm2_5 || 0) * 10) / 10,
+        pm10: Math.round((current.pm10 || 0) * 10) / 10,
+        no2: Math.round((current.nitrogen_dioxide || 0) * 10) / 10,
+        o3: Math.round((current.ozone || 0) * 10) / 10,
+        co: Math.round((current.carbon_monoxide || 0) * 10) / 10,
+        updatedAt: new Date().toISOString(),
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`获取空气质量数据失败: ${error.message}`)
+      }
+      throw error
+    }
   }
 }
