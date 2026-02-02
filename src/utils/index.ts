@@ -10,6 +10,10 @@ export { logger } from './logger.js'
 export { HttpClient, httpClient } from './http-client.js'
 export type { HttpClientConfig, HttpResponse } from './http-client.js'
 
+// 导出 JWT Token 工具
+export { generateJwtToken, verifyJwtToken, getCachedJwtToken } from './jwt-token.js'
+export type { JwtPayload } from './jwt-token.js'
+
 /**
  * 示例：延迟函数
  * @param ms 延迟毫秒数

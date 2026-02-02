@@ -22,9 +22,8 @@ export async function createApp() {
               target: 'pino-pretty',
               options: {
                 translateTime: 'HH:MM:ss',
-                ignore: 'pid,hostname,reqId,req,res',
+                ignore: 'hostname,reqId,req,res',
                 colorize: true,
-                messageFormat: '{msg}',
                 singleLine: true,
               },
             }
