@@ -51,4 +51,33 @@ export class WeatherController {
     const cities = await this.weatherService.getSupportedCities()
     return reply.success({ cities })
   }
+
+  /**
+   * 查询城市空气质量
+   */
+  async getAirQuality(
+    request: FastifyRequest<{ Querystring: { city: string } }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { city } = request.query
+
+      if (!city) {
+        return reply.fail(
+          'MISSING_CITY',
+          '请提供城市名称',
+          undefined,
+          400
+        )
+      }
+
+      const airQuality = await this.weatherService.getAirQuality({ city })
+      return reply.success(airQuality)
+    } catch (error) {
+      if (error instanceof Error) {
+        return reply.fail('AIR_QUALITY_ERROR', error.message)
+      }
+      throw error
+    }
+  }
 }
