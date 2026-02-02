@@ -1,4 +1,13 @@
+import dotenvFlow from 'dotenv-flow'
 import { z } from 'zod'
+
+/**
+ * 在模块加载时立即加载环境变量
+ * 这样可以避免 TypeScript import 提升导致的顺序问题
+ */
+dotenvFlow.config({
+  node_env: process.env.NODE_ENV || 'development',
+})
 
 /**
  * 环境变量 Schema 定义
@@ -18,6 +27,11 @@ const envSchema = z.object({
 
   // Swagger 配置
   SWAGGER_ENABLED: z.string().transform((val) => val === 'true').default('true'),
+
+  // 和风天气 API 配置
+  QWEATHER_PROJECT_ID: z.string().default(''),
+  QWEATHER_CREDENTIAL: z.string().default(''),
+  QWEATHER_PRIVATE_KEY_PATH: z.string().default(''),
 })
 
 /**

@@ -1,12 +1,12 @@
 /**
  * Weather Service
  * 业务逻辑层：处理天气相关的业务逻辑
- * 使用 Open-Meteo API 获取实时天气数据（免费，无需API密钥）
- * API 文档：https://open-meteo.com/en/docs
+ * 使用和风天气 API 获取实时天气和空气质量数据
+ * API 文档：https://dev.qweather.com/docs/api/
  */
 
-import { httpClient } from '../../utils/index.js'
-import { ENDPOINTS } from '../../config/constants.js'
+import { httpClient, getCachedJwtToken } from '../../utils/index.js'
+import { ENDPOINTS, QWEATHER_CITY_IDS } from '../../config/constants.js'
 
 /**
  * 天气数据接口
@@ -55,21 +55,6 @@ export interface QueryAirQualityDto {
 }
 
 /**
- * 默认时区
- */
-const TIMEZONE = 'auto'
-
-/**
- * 获取的天气数据字段
- */
-const WEATHER_FIELDS = 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m'
-
-/**
- * 空气质量数据字段
- */
-const AIR_QUALITY_FIELDS = 'us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone,carbon_monoxide'
-
-/**
  * AQI 分类标准 (美国 EPA)
  */
 const aqiCategories: Record<number, string> = {
@@ -94,47 +79,20 @@ const cityCoordinates: Record<string, { name: string; lat: number; lon: number }
 }
 
 /**
- * 天气代码映射
- */
-const weatherCodeMap: Record<number, string> = {
-  0: 'Sunny',
-  1: 'Partly Cloudy',
-  2: 'Cloudy',
-  3: 'Overcast',
-  45: 'Foggy',
-  48: 'Foggy',
-  51: 'Light Drizzle',
-  53: 'Moderate Drizzle',
-  55: 'Heavy Drizzle',
-  61: 'Slight Rain',
-  63: 'Moderate Rain',
-  65: 'Heavy Rain',
-  71: 'Slight Snow',
-  73: 'Moderate Snow',
-  75: 'Heavy Snow',
-  80: 'Slight Rain Showers',
-  81: 'Moderate Rain Showers',
-  82: 'Heavy Rain Showers',
-  85: 'Slight Snow Showers',
-  86: 'Heavy Snow Showers',
-  95: 'Thunderstorm',
-  96: 'Thunderstorm with Hail',
-  99: 'Thunderstorm with Hail',
-}
-
-/**
  * Weather Service 类
  */
 export class WeatherService {
   /**
    * 查询指定城市的天气
-   * 调用 Open-Meteo API 获取实时天气数据
+   * 调用和风天气 API 获取实时天气数据
+   * https://dev.qweather.com/docs/api/weather/weather-now/
    */
   async getWeather(dto: QueryWeatherDto): Promise<Weather> {
     const cityKey = dto.city.toLowerCase()
     const cityData = cityCoordinates[cityKey]
+    const qweatherId = QWEATHER_CITY_IDS[cityKey]
 
-    if (!cityData) {
+    if (!cityData || !qweatherId) {
       const supportedCities = Object.values(cityCoordinates)
         .map((c) => c.name)
         .join(', ')
@@ -142,46 +100,51 @@ export class WeatherService {
     }
 
     try {
-      // 调用 Open-Meteo API
+      // 获取 JWT Token
+      const token = await getCachedJwtToken()
+
+      // 调用和风天气 Weather Now API
       const response = await httpClient.get<{
-        current?: {
-          temperature_2m?: number
-          relative_humidity_2m?: number
-          apparent_temperature?: number
-          weather_code?: number
-          wind_speed_10m?: number
+        code?: string
+        now?: {
+          temp?: number
+          feelsLike?: number
+          humidity?: number
+          windSpeed?: number
+          text?: string
         }
-        latitude?: number
-        longitude?: number
+        updateTime?: string
       }>(ENDPOINTS.WEATHER_API, {
         params: {
-          latitude: cityData.lat,
-          longitude: cityData.lon,
-          current: WEATHER_FIELDS,
-          timezone: TIMEZONE,
+          location: qweatherId,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
       })
 
       const data = response.data
-      const current = data.current
+      const current = data.now
 
-      if (!current) {
-        throw new Error('无法获取天气数据')
+      if (!current || data.code !== '200') {
+        throw new Error(`获取天气数据失败，状态码: ${data.code}`)
       }
 
-      const weatherCode = current.weather_code || 0
-      const condition = weatherCodeMap[weatherCode] || 'Unknown'
+      const temp = typeof current.temp === 'string' ? parseFloat(current.temp) : (current.temp || 0)
+      const humidity = typeof current.humidity === 'string' ? parseInt(current.humidity, 10) : (current.humidity || 0)
+      const windSpeed = typeof current.windSpeed === 'string' ? parseFloat(current.windSpeed) : (current.windSpeed || 0)
+      const feelsLike = typeof current.feelsLike === 'string' ? parseFloat(current.feelsLike) : (current.feelsLike || 0)
 
       return {
         city: cityData.name,
-        latitude: data.latitude || cityData.lat,
-        longitude: data.longitude || cityData.lon,
-        temperature: Math.round((current.temperature_2m || 0) * 10) / 10,
-        condition,
-        humidity: current.relative_humidity_2m || 0,
-        windSpeed: Math.round((current.wind_speed_10m || 0) * 10) / 10,
-        feelsLike: Math.round((current.apparent_temperature || 0) * 10) / 10,
-        updatedAt: new Date().toISOString(),
+        latitude: cityData.lat,
+        longitude: cityData.lon,
+        temperature: Math.round(temp * 10) / 10,
+        condition: current.text || 'Unknown',
+        humidity,
+        windSpeed: Math.round(windSpeed * 10) / 10,
+        feelsLike: Math.round(feelsLike * 10) / 10,
+        updatedAt: data.updateTime || new Date().toISOString(),
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -200,7 +163,8 @@ export class WeatherService {
 
   /**
    * 查询指定城市的空气质量
-   * 调用 Open-Meteo Air Quality API 获取实时空气质量数据
+   * 调用和风天气 API 获取实时空气质量数据（通过经纬度）
+   * https://dev.qweather.com/docs/api/air-quality/air-quality-now/
    */
   async getAirQuality(dto: QueryAirQualityDto): Promise<AirQuality> {
     const cityKey = dto.city.toLowerCase()
@@ -214,52 +178,60 @@ export class WeatherService {
     }
 
     try {
-      // 调用 Open-Meteo Air Quality API
+      // 获取 JWT Token
+      const token = await getCachedJwtToken()
+
+      // 调用和风天气 Air Quality API（使用路径参数：纬度/经度）
+      const url = `${ENDPOINTS.AIR_QUALITY_API}/${cityData.lat}/${cityData.lon}`
       const response = await httpClient.get<{
-        current?: {
-          us_aqi?: number
-          pm2_5?: number
+        code?: string
+        now?: {
+          aqi?: number
+          category?: string
+          categoryEn?: string
+          primary?: string
+          primaryEn?: string
           pm10?: number
-          nitrogen_dioxide?: number
-          ozone?: number
-          carbon_monoxide?: number
+          pm2p5?: number
+          no2?: number
+          so2?: number
+          co?: number
+          o3?: number
         }
-        latitude?: number
-        longitude?: number
-      }>(ENDPOINTS.AIR_QUALITY_API, {
-        params: {
-          latitude: cityData.lat,
-          longitude: cityData.lon,
-          current: AIR_QUALITY_FIELDS,
+        fxLink?: string
+        updateTime?: string
+      }>(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
       })
 
       const data = response.data
-      const current = data.current
+      const current = data.now
 
-      if (!current) {
-        throw new Error('无法获取空气质量数据')
+      if (!current || data.code !== '200') {
+        throw new Error(`获取空气质量数据失败，状态码: ${data.code}`)
       }
 
-      const aqi = Math.round(current.us_aqi || 0)
+      const aqi = Math.round(current.aqi || 0)
       const aqiCategory = aqi >= 0 && aqi <= 50 ? 0 :
                           aqi >= 51 && aqi <= 100 ? 1 :
                           aqi >= 101 && aqi <= 150 ? 2 :
                           aqi >= 151 && aqi <= 200 ? 3 :
                           aqi >= 201 && aqi <= 300 ? 4 : 5
-      const category = aqiCategories[aqiCategory] || 'Unknown'
+      const category = aqiCategories[aqiCategory] || current.category || 'Unknown'
 
       return {
         city: cityData.name,
-        latitude: data.latitude || cityData.lat,
-        longitude: data.longitude || cityData.lon,
+        latitude: cityData.lat,
+        longitude: cityData.lon,
         aqi,
         category,
-        pm25: Math.round((current.pm2_5 || 0) * 10) / 10,
+        pm25: Math.round((current.pm2p5 || 0) * 10) / 10,
         pm10: Math.round((current.pm10 || 0) * 10) / 10,
-        no2: Math.round((current.nitrogen_dioxide || 0) * 10) / 10,
-        o3: Math.round((current.ozone || 0) * 10) / 10,
-        co: Math.round((current.carbon_monoxide || 0) * 10) / 10,
+        no2: Math.round((current.no2 || 0) * 10) / 10,
+        o3: Math.round((current.o3 || 0) * 10) / 10,
+        co: Math.round((current.co || 0) * 10) / 10,
         updatedAt: new Date().toISOString(),
       }
     } catch (error) {

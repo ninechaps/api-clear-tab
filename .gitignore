@@ -9,8 +9,7 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment variables
-.env
+# Environment variables (only ignore .local files)
 .env.local
 .env.*.local
 .env.development.local
@@ -82,3 +81,4 @@ dist-ssr/
 # AI
 .claude
 CLAUDE.md
+ed25519-private.pem

@@ -6,11 +6,24 @@
  * 公共 API 地址
  */
 export const ENDPOINTS = {
-  WEATHER_API: 'https://api.open-meteo.com/v1/forecast',
-  AIR_QUALITY_API: 'https://air-quality.open-meteo.com/v1/air-quality',
+  WEATHER_API: 'https://jt3md9j763.re.qweatherapi.com/v7/weather/now',
+  AIR_QUALITY_API: 'https://jt3md9j763.re.qweatherapi.com/airquality/v1/current',
   QUOTA_API: 'https://zenquotes.io/api/random',
   EXCHANGE_RATE_API: 'https://api.exchangerate.host',
   YAHOO_FINANCE_API: 'https://query1.finance.yahoo.com/v8/finance/chart',
+}
+
+/**
+ * 和风天气城市位置 ID 映射
+ * 用于空气质量查询
+ * https://dev.qweather.com/docs/api/geoapi/
+ */
+export const QWEATHER_CITY_IDS: Record<string, string> = {
+  beijing: '101010100',
+  shanghai: '101020100',
+  shenzhen: '101280101',
+  hangzhou: '101210101',
+  guangzhou: '101280101',
 }
 
 /**

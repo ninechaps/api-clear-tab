@@ -5,6 +5,7 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
+import https from 'https'
 import { logger } from './logger.js'
 
 /**
@@ -32,23 +33,24 @@ export class HttpClient {
   private client: AxiosInstance
 
   constructor(config?: HttpClientConfig) {
+    // 开发环境禁用 TLS 验证（解决网络环境 SSL 握手失败问题）
+    const httpsAgent = new https.Agent({
+      rejectUnauthorized: process.env.NODE_ENV === 'production',
+    })
+
     this.client = axios.create({
       timeout: config?.timeout || 30000,
+      httpsAgent,
       ...config,
     })
 
     // 请求拦截器
     this.client.interceptors.request.use(
       (requestConfig) => {
-        logger.debug('HTTP Request:', {
-          method: requestConfig.method?.toUpperCase(),
-          url: requestConfig.url,
-          params: requestConfig.params,
-        })
         return requestConfig
       },
       (error) => {
-        logger.error('Request error:', error.message)
+        logger.error({ message: error.message }, 'Request interceptor error')
         return Promise.reject(error)
       },
     )
@@ -56,18 +58,18 @@ export class HttpClient {
     // 响应拦截器
     this.client.interceptors.response.use(
       (response) => {
-        logger.debug('HTTP Response:', {
-          status: response.status,
-          url: response.config.url,
-        })
         return response
       },
       (error: AxiosError) => {
-        logger.error('Response error:', {
-          status: error.response?.status,
-          url: error.config?.url,
-          message: error.message,
-        })
+        logger.error(
+          {
+            status: error.response?.status || 'N/A',
+            url: error.config?.url || 'N/A',
+            message: error.message,
+            code: error.code,
+          },
+          'HTTP Response Error'
+        )
         return Promise.reject(error)
       },
     )
