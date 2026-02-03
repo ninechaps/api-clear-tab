@@ -8,6 +8,7 @@
 export const ENDPOINTS = {
   WEATHER_API: 'https://jt3md9j763.re.qweatherapi.com/v7/weather/now',
   AIR_QUALITY_API: 'https://jt3md9j763.re.qweatherapi.com/airquality/v1/current',
+  CITY_API: 'https://jt3md9j763.re.qweatherapi.com/geo/v2/city/lookup',
   QUOTA_API: 'https://zenquotes.io/api/random',
   EXCHANGE_RATE_API: 'https://api.exchangerate.host',
   YAHOO_FINANCE_API: 'https://query1.finance.yahoo.com/v8/finance/chart',

@@ -75,19 +75,58 @@ export const getSupportedCitiesSchema = {
 export const airQualitySchema = {
   type: 'object',
   properties: {
-    city: { type: 'string' },
     latitude: { type: 'number' },
     longitude: { type: 'number' },
     aqi: { type: 'number' },
+    aqiDisplay: { type: 'string' },
+    level: { type: 'string' },
     category: { type: 'string' },
-    pm25: { type: 'number' },
-    pm10: { type: 'number' },
-    no2: { type: 'number' },
-    o3: { type: 'number' },
-    co: { type: 'number' },
-    updatedAt: { type: 'string', format: 'date-time' },
+    primaryPollutant: {
+      type: 'object',
+      properties: {
+        code: { type: 'string' },
+        name: { type: 'string' },
+        fullName: { type: 'string' },
+      },
+    },
+    healthEffect: { type: 'string' },
+    healthAdvice: {
+      type: 'object',
+      properties: {
+        generalPopulation: { type: 'string' },
+        sensitivePopulation: { type: 'string' },
+      },
+    },
+    color: {
+      type: 'object',
+      properties: {
+        red: { type: 'number' },
+        green: { type: 'number' },
+        blue: { type: 'number' },
+        alpha: { type: 'number' },
+      },
+    },
+    pollutants: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          name: { type: 'string' },
+          fullName: { type: 'string' },
+          concentration: {
+            type: 'object',
+            properties: {
+              value: { type: 'number' },
+              unit: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    updateTime: { type: 'string', format: 'date-time' },
   },
-  required: ['city', 'latitude', 'longitude', 'aqi', 'category', 'pm25', 'pm10', 'no2', 'o3', 'co', 'updatedAt'],
+  required: ['latitude', 'longitude', 'aqi', 'aqiDisplay', 'level', 'category', 'updateTime'],
 } as const
 
 /**
@@ -97,7 +136,53 @@ export const getAirQualitySchema = {
   querystring: {
     type: 'object',
     properties: {
-      city: { type: 'string', minLength: 1, maxLength: 50 },
+      latitude: { type: 'number', minimum: -90, maximum: 90 },
+      longitude: { type: 'number', minimum: -180, maximum: 180 },
+    },
+    required: ['latitude', 'longitude'],
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        data: airQualitySchema,
+        timestamp: { type: 'number' },
+      },
+    },
+  },
+} as const
+
+/**
+ * 城市地理位置对象 Schema
+ */
+export const cityLocationSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    lat: { type: 'number' },
+    lon: { type: 'number' },
+    country: { type: 'string' },
+    adm1: { type: 'string' },
+    adm2: { type: 'string' },
+    timezone: { type: 'string' },
+    utcOffset: { type: 'string' },
+    isDst: { type: 'number' },
+    type: { type: 'string' },
+    rank: { type: 'number' },
+    fxLink: { type: 'string' },
+  },
+  required: ['name', 'lat', 'lon', 'country', 'adm1', 'adm2', 'timezone', 'utcOffset', 'isDst', 'type', 'rank', 'fxLink'],
+} as const
+
+/**
+ * 查询城市地理位置请求 Schema
+ */
+export const getCityLocationSchema = {
+  querystring: {
+    type: 'object',
+    properties: {
+      city: { type: 'string', minLength: 1, maxLength: 100 },
     },
     required: ['city'],
   },
@@ -106,7 +191,7 @@ export const getAirQualitySchema = {
       type: 'object',
       properties: {
         success: { type: 'boolean' },
-        data: airQualitySchema,
+        data: cityLocationSchema,
         timestamp: { type: 'number' },
       },
     },

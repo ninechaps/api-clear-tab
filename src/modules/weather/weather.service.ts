@@ -34,36 +34,146 @@ export interface QueryWeatherDto {
  * 空气质量数据接口
  */
 export interface AirQuality {
-  city: string
   latitude: number
   longitude: number
   aqi: number
+  aqiDisplay: string
+  level: string
   category: string
-  pm25: number
-  pm10: number
-  no2: number
-  o3: number
-  co: number
-  updatedAt: string
+  primaryPollutant: {
+    code: string
+    name: string
+    fullName: string
+  }
+  healthEffect: string
+  healthAdvice: {
+    generalPopulation: string
+    sensitivePopulation: string
+  }
+  color: {
+    red: number
+    green: number
+    blue: number
+    alpha: number
+  }
+  pollutants: Array<{
+    code: string
+    name: string
+    fullName: string
+    concentration: {
+      value: number
+      unit: string
+    }
+  }>
+  updateTime: string
 }
 
 /**
  * 查询空气质量 DTO
  */
 export interface QueryAirQualityDto {
+  latitude: number
+  longitude: number
+}
+
+/**
+ * 城市地理位置数据接口
+ */
+export interface CityLocation {
+  name: string
+  lat: number
+  lon: number
+  country: string
+  adm1: string
+  adm2: string
+  timezone: string
+  utcOffset: string
+  isDst: number
+  type: string
+  rank: number
+  fxLink: string
+}
+
+/**
+ * 查询城市地理位置 DTO
+ */
+export interface QueryCityLocationDto {
   city: string
 }
 
 /**
- * AQI 分类标准 (美国 EPA)
+ * 和风天气 City Lookup API 响应类型（内部使用）
  */
-const aqiCategories: Record<number, string> = {
-  0: 'Good',
-  1: 'Moderate',
-  2: 'Unhealthy for Sensitive Groups',
-  3: 'Unhealthy',
-  4: 'Very Unhealthy',
-  5: 'Hazardous',
+interface QWeatherCityResponse {
+  code: string
+  location?: Array<{
+    name: string
+    id: string
+    lat: string
+    lon: string
+    adm2: string
+    adm1: string
+    country: string
+    tz: string
+    utcOffset: string
+    isDst: string
+    type: string
+    rank: string
+    fxLink: string
+  }>
+}
+
+/**
+ * 和风天气空气质量 API 响应类型
+ */
+interface QWeatherAirQualityResponse {
+  metadata?: {
+    tag: string
+  }
+  indexes?: Array<{
+    code: string
+    name: string
+    aqi: number
+    aqiDisplay: string
+    level: string
+    category: string
+    color: {
+      red: number
+      green: number
+      blue: number
+      alpha: number
+    }
+    primaryPollutant: {
+      code: string
+      name: string
+      fullName: string
+    }
+    health: {
+      effect: string
+      advice: {
+        generalPopulation: string
+        sensitivePopulation: string
+      }
+    }
+  }>
+  pollutants?: Array<{
+    code: string
+    name: string
+    fullName: string
+    concentration: {
+      value: number
+      unit: string
+    }
+    subIndexes?: Array<{
+      code: string
+      aqi: number
+      aqiDisplay: string
+    }>
+  }>
+  stations?: Array<{
+    id: string
+    name: string
+  }>
 }
 
 /**
@@ -164,79 +274,124 @@ export class WeatherService {
   /**
    * 查询指定城市的空气质量
    * 调用和风天气 API 获取实时空气质量数据（通过经纬度）
-   * https://dev.qweather.com/docs/api/air-quality/air-quality-now/
    */
   async getAirQuality(dto: QueryAirQualityDto): Promise<AirQuality> {
-    const cityKey = dto.city.toLowerCase()
-    const cityData = cityCoordinates[cityKey]
-
-    if (!cityData) {
-      const supportedCities = Object.values(cityCoordinates)
-        .map((c) => c.name)
-        .join(', ')
-      throw new Error(`城市 "${dto.city}" 不支持。支持的城市：${supportedCities}`)
-    }
-
     try {
       // 获取 JWT Token
       const token = await getCachedJwtToken()
 
       // 调用和风天气 Air Quality API（使用路径参数：纬度/经度）
-      const url = `${ENDPOINTS.AIR_QUALITY_API}/${cityData.lat}/${cityData.lon}`
-      const response = await httpClient.get<{
-        code?: string
-        now?: {
-          aqi?: number
-          category?: string
-          categoryEn?: string
-          primary?: string
-          primaryEn?: string
-          pm10?: number
-          pm2p5?: number
-          no2?: number
-          so2?: number
-          co?: number
-          o3?: number
-        }
-        fxLink?: string
-        updateTime?: string
-      }>(url, {
+      const url = `${ENDPOINTS.AIR_QUALITY_API}/${dto.latitude}/${dto.longitude}`
+      const response = await httpClient.get<QWeatherAirQualityResponse>(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
       const data = response.data
-      const current = data.now
 
-      if (!current || data.code !== '200') {
-        throw new Error(`获取空气质量数据失败，状态码: ${data.code}`)
+      // 检查响应状态
+      if (!data.indexes || data.indexes.length === 0) {
+        throw new Error('获取空气质量数据失败：没有找到空气质量指数数据')
       }
 
-      const aqi = Math.round(current.aqi || 0)
-      const aqiCategory = aqi >= 0 && aqi <= 50 ? 0 :
-                          aqi >= 51 && aqi <= 100 ? 1 :
-                          aqi >= 101 && aqi <= 150 ? 2 :
-                          aqi >= 151 && aqi <= 200 ? 3 :
-                          aqi >= 201 && aqi <= 300 ? 4 : 5
-      const category = aqiCategories[aqiCategory] || current.category || 'Unknown'
+      const airQualityIndex = data.indexes[0]!
+      const pollutants = data.pollutants || []
 
+      // 构造返回对象
       return {
-        city: cityData.name,
-        latitude: cityData.lat,
-        longitude: cityData.lon,
-        aqi,
-        category,
-        pm25: Math.round((current.pm2p5 || 0) * 10) / 10,
-        pm10: Math.round((current.pm10 || 0) * 10) / 10,
-        no2: Math.round((current.no2 || 0) * 10) / 10,
-        o3: Math.round((current.o3 || 0) * 10) / 10,
-        co: Math.round((current.co || 0) * 10) / 10,
-        updatedAt: new Date().toISOString(),
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        aqi: airQualityIndex.aqi,
+        aqiDisplay: airQualityIndex.aqiDisplay || '',
+        level: airQualityIndex.level || '',
+        category: airQualityIndex.category || '',
+        primaryPollutant: {
+          code: airQualityIndex.primaryPollutant?.code || '',
+          name: airQualityIndex.primaryPollutant?.name || '',
+          fullName: airQualityIndex.primaryPollutant?.fullName || '',
+        },
+        healthEffect: airQualityIndex.health?.effect || '',
+        healthAdvice: {
+          generalPopulation: airQualityIndex.health?.advice?.generalPopulation || '',
+          sensitivePopulation: airQualityIndex.health?.advice?.sensitivePopulation || '',
+        },
+        color: {
+          red: airQualityIndex.color?.red || 0,
+          green: airQualityIndex.color?.green || 0,
+          blue: airQualityIndex.color?.blue || 0,
+          alpha: airQualityIndex.color?.alpha || 0,
+        },
+        pollutants: pollutants.map((p) => ({
+          code: p.code || '',
+          name: p.name || '',
+          fullName: p.fullName || '',
+          concentration: {
+            value: p.concentration?.value || 0,
+            unit: p.concentration?.unit || '',
+          },
+        })),
+        updateTime: new Date().toISOString(),
       }
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`获取空气质量数据失败: ${error.message}`)
+      }
+      throw error
+    }
+  }
+
+  /**
+   * 查询城市地理位置信息
+   * 调用和风天气 City Lookup API 获取城市的地理信息（经纬度、时区等）
+   * https://dev.qweather.com/docs/api/geoapi/city-lookup/
+   */
+  async getCityLocation(dto: QueryCityLocationDto): Promise<CityLocation> {
+    try {
+      // 获取 JWT Token
+      const token = await getCachedJwtToken()
+
+      // 调用和风天气 City Lookup API
+      const response = await httpClient.get<QWeatherCityResponse>(
+        ENDPOINTS.CITY_API,
+        {
+          params: {
+            location: dto.city,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const data = response.data
+
+      // 检查响应状态
+      if (!data.location || data.location.length === 0 || data.code !== '200') {
+        throw new Error(`未找到城市 "${dto.city}" 的地理位置信息，状态码: ${data.code}`)
+      }
+
+      // 取第一个结果（rank 最高）
+      const location = data.location[0]!
+
+      // 类型转换并构造返回对象
+      return {
+        name: location.name,
+        lat: parseFloat(location.lat),
+        lon: parseFloat(location.lon),
+        country: location.country,
+        adm1: location.adm1,
+        adm2: location.adm2,
+        timezone: location.tz,
+        utcOffset: location.utcOffset,
+        isDst: parseInt(location.isDst, 10),
+        type: location.type,
+        rank: parseInt(location.rank, 10),
+        fxLink: location.fxLink,
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`获取城市地理位置失败: ${error.message}`)
       }
       throw error
     }
