@@ -1,6 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { WeatherService } from './weather.service.js'
-import {logger} from "@/utils";
 
 /**
  * Weather Controller
