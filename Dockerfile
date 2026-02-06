@@ -4,7 +4,7 @@
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23 AS builder
 
 # Install pnpm
-RUN npm install -g pnpm@latest
+RUN npm install -g pnpm
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
-COPY src ./src
+COPY . .
 
 # Build TypeScript
 RUN pnpm build
@@ -29,7 +29,7 @@ FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23
 RUN apk add --no-cache dumb-init
 
 # Install pnpm
-RUN npm install -g pnpm@latest
+RUN npm install -g pnpm
 
 WORKDIR /app
 
