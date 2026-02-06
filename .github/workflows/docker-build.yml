@@ -1,0 +1,49 @@
+name: Deploy to Aliyun ECS
+
+on:
+  push:
+    branches: [ "main" ]  # 监听 main 分支的提交
+  workflow_dispatch:      # 允许手动点击按钮触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          # 遇到指纹验证错误时自动接受
+          script_stop: true
+          # 下面是登录服务器后执行的脚本
+          script: |
+            set -e
+
+            WEB_PATH="/projects/api-clear-tabs"
+            REPO_URL="git@github.com:ninechaps/api-clear-tab.git"
+
+            # 判断项目目录是否存在
+            if [ -d "$WEB_PATH" ]; then
+              echo "目录存在，执行更新..."
+              cd $WEB_PATH
+              git reset --hard origin/main
+              git pull origin main
+            else
+              exit 1
+            fi
+
+            echo "正在构建并启动容器..."
+
+            if [ ! -f "Dockerfile" ]; then
+              echo "错误：找不到 Dockerfile 文件！"
+              exit 1
+            fi
+
+            docker compose down
+            docker compose up -d --build --remove-orphans
+
+            docker image prune -f
+            echo "部署成功！"

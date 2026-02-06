@@ -1,0 +1,38 @@
+# ============================================================================
+# Development Dockerfile
+# Use this for local development with hot reload
+# Build: docker build -f Dockerfile.dev -t api-clear-tab:dev .
+# Run: docker run -it -v $(pwd)/src:/app/src -p 3000:3000 api-clear-tab:dev
+# ============================================================================
+FROM node:20-alpine
+
+# Install pnpm
+RUN npm install -g pnpm@8.15.0
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy package manifests
+COPY package.json pnpm-lock.yaml ./
+
+# Install all dependencies (including devDependencies)
+RUN pnpm install --frozen-lockfile
+
+# Copy source code and configuration
+COPY src ./src
+COPY tsconfig.json tsconfig.eslint.json .eslintrc.json ./
+
+# Change ownership to non-root user
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose default port
+EXPOSE 3000
+
+# Start application in watch mode
+CMD ["pnpm", "dev"]
