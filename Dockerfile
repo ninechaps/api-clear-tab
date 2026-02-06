@@ -1,10 +1,10 @@
 # ============================================================================
 # Build Stage
 # ============================================================================
-FROM node:20-alpine AS builder
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23 AS builder
 
 # Install pnpm
-RUN npm install -g pnpm@8.15.0
+RUN npm install -g pnpm@latest
 
 WORKDIR /app
 
@@ -24,13 +24,13 @@ RUN pnpm build
 # ============================================================================
 # Runtime Stage
 # ============================================================================
-FROM node:20-alpine
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
 # Install pnpm
-RUN npm install -g pnpm@8.15.0
+RUN npm install -g pnpm@latest
 
 WORKDIR /app
 
