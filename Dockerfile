@@ -16,7 +16,6 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
-COPY tsconfig.json tsconfig.eslint.json ./
 
 # Build TypeScript
 RUN pnpm build
