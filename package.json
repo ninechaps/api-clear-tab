@@ -55,6 +55,7 @@
     "husky": "^9.0.11",
     "lint-staged": "^15.2.0",
     "pino-pretty": "^10.3.1",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3",
     "vitest": "^1.2.2"
@@ -67,7 +68,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
     "lint": "eslint src cli scripts --ext .ts,.js",
     "lint:fix": "eslint src cli scripts --ext .ts,.js --fix",
