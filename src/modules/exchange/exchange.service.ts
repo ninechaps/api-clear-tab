@@ -12,7 +12,7 @@ import { httpClient } from '../../utils/index.js'
  */
 export interface ExchangeRates {
   base: string
-  date: string
+  date?: string
   rates: Record<string, number>
   timestamp: number
 }
@@ -26,7 +26,7 @@ export interface CurrencyConversion {
   amount: number
   result: number
   rate: number
-  date: string
+  date?: string
 }
 
 /**
