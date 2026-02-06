@@ -22,7 +22,7 @@ jobs:
           script: |
             set -e
 
-            WEB_PATH="/projects/api-clear-tabs"
+            WEB_PATH="/projects/api-clear-tab"
             REPO_URL="git@github.com:ninechaps/api-clear-tab.git"
 
             # 判断项目目录是否存在
