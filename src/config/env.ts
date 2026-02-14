@@ -45,9 +45,6 @@ export type EnvConfig = z.infer<typeof envSchema>
  */
 export function loadEnv(): EnvConfig {
   try {
-
-    console.log("---------------------", {env: process.env, en: process.env.NODE_ENV})
-
     const env = envSchema.parse(process.env)
     return env
   } catch (error) {

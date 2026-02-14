@@ -78,4 +78,4 @@ dist-ssr/
 # AI
 .claude
 CLAUDE.md
-ed25519-private.pem
+DEPLOYMENT.md

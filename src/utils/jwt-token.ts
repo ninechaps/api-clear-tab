@@ -1,7 +1,6 @@
 import { SignJWT, importPKCS8, jwtVerify, importSPKI } from 'jose'
 import { readFile } from 'fs/promises'
 import { config } from '@/config/index.js'
-import { logger } from "@/utils/logger.js";
 
 /**
  * JWT Token 生成器
@@ -27,8 +26,6 @@ export interface JwtPayload {
  * @returns JWT Token 字符串
  */
 export async function generateJwtToken(expiresIn: number = 86400): Promise<string> {
-  logger.info("=================================================")
-  logger.info("PATH: ", { path: config.QWEATHER_PRIVATE_KEY_PATH, })
   // 1. 读取私钥文件
   const privateKeyPem = await readFile(config.QWEATHER_PRIVATE_KEY_PATH, 'utf8')
 
@@ -92,7 +89,6 @@ let cachedTokenExpiry: number = 0
 export async function getCachedJwtToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
 
-  logger.info("===================", {cachedToken,cachedTokenExpiry})
   // 如果缓存的 token 还有 5 分钟以上的有效期，直接返回
   if (cachedToken && cachedTokenExpiry - now > 300) {
     return cachedToken

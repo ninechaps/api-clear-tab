@@ -1,6 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { WeatherService } from './weather.service.js'
-import { logger } from "@/utils/logger.js";
 
 /**
  * Weather Controller
@@ -22,7 +21,6 @@ export class WeatherController {
   ) {
     try {
       const { city } = request.query
-      logger.info("--------------------------------", {city})
 
       if (!city) {
         return reply.fail(
