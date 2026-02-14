@@ -1,6 +1,5 @@
 import dotenvFlow from 'dotenv-flow'
 import { z } from 'zod'
-import { logger } from "@/utils/logger.js";
 
 /**
  * 在模块加载时立即加载环境变量
@@ -47,7 +46,7 @@ export type EnvConfig = z.infer<typeof envSchema>
 export function loadEnv(): EnvConfig {
   try {
 
-    logger.info("---------------------", {env: process.env, en: process.env.NODE_ENV})
+    console.log("---------------------", {env: process.env, en: process.env.NODE_ENV})
 
     const env = envSchema.parse(process.env)
     return env
