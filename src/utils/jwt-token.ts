@@ -1,6 +1,7 @@
 import { SignJWT, importPKCS8, jwtVerify, importSPKI } from 'jose'
 import { readFile } from 'fs/promises'
 import { config } from '@/config/index.js'
+import {logger} from "@/utils/logger";
 
 /**
  * JWT Token 生成器
@@ -28,6 +29,8 @@ export interface JwtPayload {
 export async function generateJwtToken(expiresIn: number = 86400): Promise<string> {
   // 1. 读取私钥文件
   const privateKeyPem = await readFile(config.QWEATHER_PRIVATE_KEY_PATH, 'utf8')
+
+  logger.info("PATH: ", { path: config.QWEATHER_PRIVATE_KEY_PATH, })
 
 
   // 2. 导入私钥为 EdDSA 格式
