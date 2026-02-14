@@ -19,6 +19,8 @@ services:
     env_file:
       - .env
       - .env.local
+    volumes:
+      - /home/key-files:/app/key-files:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
