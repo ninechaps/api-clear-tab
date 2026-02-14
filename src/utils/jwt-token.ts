@@ -1,7 +1,6 @@
 import { SignJWT, importPKCS8, jwtVerify, importSPKI } from 'jose'
 import { readFile } from 'fs/promises'
 import { config } from '@/config/index.js'
-import {logger} from "@/utils/logger";
 
 /**
  * JWT Token 生成器
