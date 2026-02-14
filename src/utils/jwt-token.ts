@@ -93,6 +93,7 @@ let cachedTokenExpiry: number = 0
 export async function getCachedJwtToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
 
+  logger.info("===================", {cachedToken,cachedTokenExpiry})
   // 如果缓存的 token 还有 5 分钟以上的有效期，直接返回
   if (cachedToken && cachedTokenExpiry - now > 300) {
     return cachedToken
