@@ -1,9 +1,9 @@
 # ============================================================================
 # Build Stage
 # ============================================================================
-ENV NODE_ENV=production
-
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23 AS builder
+
+ENV NODE_ENV=production
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -26,6 +26,8 @@ RUN pnpm build
 # Runtime Stage
 # ============================================================================
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23
+
+ENV NODE_ENV=production
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
