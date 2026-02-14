@@ -1,6 +1,6 @@
 import dotenvFlow from 'dotenv-flow'
 import { z } from 'zod'
-import {logger} from "@/utils";
+import { logger } from "@/utils/logger.js";
 
 /**
  * 在模块加载时立即加载环境变量
