@@ -3,8 +3,6 @@
 # ============================================================================
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23 AS builder
 
-ENV NODE_ENV=production
-
 # Install pnpm
 RUN npm install -g pnpm
 
@@ -16,6 +14,8 @@ COPY package.json pnpm-lock.yaml ./
 # Install all dependencies (including devDependencies for build)
 RUN pnpm install --frozen-lockfile
 
+ENV NODE_ENV=production
+
 # Copy source code
 COPY . .
 
@@ -26,8 +26,6 @@ RUN pnpm build
 # Runtime Stage
 # ============================================================================
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23
-
-ENV NODE_ENV=production
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
@@ -47,6 +45,8 @@ COPY package.json pnpm-lock.yaml ./
 # Install only production dependencies
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm prune --prod
+
+ENV NODE_ENV=production
 
 # Copy compiled application from builder
 COPY --from=builder /app/dist ./dist

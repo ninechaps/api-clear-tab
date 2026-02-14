@@ -34,22 +34,3 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
-
-  # Development service with volume mounts (for local development)
-  # Uncomment below to use:
-  # api-dev:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.dev
-  #   container_name: api-clear-tab-dev
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     NODE_ENV: development
-  #     HOST: 0.0.0.0
-  #     PORT: 3000
-  #   volumes:
-  #     - ./src:/app/src
-  #     - ./node_modules:/app/node_modules
-  #   command: pnpm dev
-  #   restart: unless-stopped
