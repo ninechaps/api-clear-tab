@@ -14,8 +14,6 @@ COPY package.json pnpm-lock.yaml ./
 # Install all dependencies (including devDependencies for build)
 RUN pnpm install --frozen-lockfile
 
-ENV NODE_ENV=production
-
 # Copy source code
 COPY . .
 
@@ -46,7 +44,6 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm prune --prod
 
-ENV NODE_ENV=production
 
 # Copy compiled application from builder
 COPY --from=builder /app/dist ./dist
