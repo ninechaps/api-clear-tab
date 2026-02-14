@@ -27,11 +27,10 @@ export interface JwtPayload {
  * @returns JWT Token 字符串
  */
 export async function generateJwtToken(expiresIn: number = 86400): Promise<string> {
-  // 1. 读取私钥文件
-  const privateKeyPem = await readFile(config.QWEATHER_PRIVATE_KEY_PATH, 'utf8')
-
   logger.info("=================================================")
   logger.info("PATH: ", { path: config.QWEATHER_PRIVATE_KEY_PATH, })
+  // 1. 读取私钥文件
+  const privateKeyPem = await readFile(config.QWEATHER_PRIVATE_KEY_PATH, 'utf8')
 
 
   // 2. 导入私钥为 EdDSA 格式
