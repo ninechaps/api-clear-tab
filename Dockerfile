@@ -1,6 +1,8 @@
 # ============================================================================
 # Build Stage
 # ============================================================================
+ENV NODE_ENV=production
+
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22.22.0-alpine3.23 AS builder
 
 # Install pnpm
