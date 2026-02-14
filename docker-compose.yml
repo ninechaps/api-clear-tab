@@ -18,6 +18,7 @@ services:
       # Add other required environment variables here
     env_file:
       - .env
+      - .env.local
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
